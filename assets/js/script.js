@@ -1,12 +1,12 @@
 /**
  * Discord Embed Builder
  * Contribute or report issues at
- * https://github.com/Glitchii/embedbuilder
+ * https://github.com/deckerrj/embedbuilder
  */
 
 window.options ??= {};
 window.inIframe ??= top !== self;
-mainHost = "glitchii.github.io";
+mainHost = "deckerrj.github.io";
 
 let params = new URLSearchParams(location.search),
     hasParam = param => params.get(param) !== null,
@@ -21,7 +21,7 @@ let params = new URLSearchParams(location.search),
     onlyEmbed = hasParam('embed') || options.onlyEmbed,
     allowPlaceholders = hasParam('placeholders') || options.allowPlaceholders,
     autoUpdateURL = localStorage.getItem('autoUpdateURL') || options.autoUpdateURL,
-    noMultiEmbedsOption = localStorage.getItem('noMultiEmbedsOption') || hasParam('nomultiembedsoption') || options.noMultiEmbedsOption,
+    noMultiEmbedsOption = true, // localStorage.getItem('noMultiEmbedsOption') || hasParam('nomultiembedsoption') || options.noMultiEmbedsOption,
     single = noMultiEmbedsOption ? options.single ?? true : (localStorage.getItem('single') || hasParam('single') || options.single) ?? false,
     multiEmbeds = !single,
     autoParams = localStorage.getItem('autoParams') || hasParam('autoparams') || options.autoParams,
@@ -111,7 +111,7 @@ const urlOptions = ({ remove, set }) => {
     const url = new URL(location.href);
     if (remove) url.searchParams.delete(remove);
     if (set) url.searchParams.set(set[0], set[1]);
-    
+
     try {
         history.replaceState(null, null, url.href.replace(/(?<!data=[^=]+|=)=(&|$)/g, x => x === '=' ? '' : '&'));
     } catch (e) {
@@ -331,12 +331,12 @@ addEventListener('DOMContentLoaded', () => {
 
     const editorHolder = document.querySelector('.editorHolder'),
         guiParent = document.querySelector('.top'),
-        embedContent = document.querySelector('.messageContent'),
+        // embedContent = document.querySelector('.messageContent'),
         embedCont = document.querySelector('.msgEmbed>.container'),
         gui = guiParent.querySelector('.gui:first-of-type');
 
     editor = CodeMirror(elt => editorHolder.parentNode.replaceChild(elt, editorHolder), {
-        value: JSON.stringify(json, null, 4),
+        value: JSON.stringify(json.embeds[0], null, 4),
         gutters: ["CodeMirror-foldgutter", "CodeMirror-lint-markers"],
         scrollbarStyle: "overlay",
         mode: "application/json",
@@ -368,6 +368,7 @@ addEventListener('DOMContentLoaded', () => {
     const notif = document.querySelector('.notification');
 
     error = (msg, time = '5s') => {
+        console.log(msg);
         notif.innerHTML = msg;
         notif.style.removeProperty('--startY');
         notif.style.removeProperty('--startOpacity');
@@ -457,7 +458,7 @@ addEventListener('DOMContentLoaded', () => {
 
             // parse text in brackets and then the URL in parentheses.
             .replace(/\[([^\[\]]+)\]\((.+?)\)/g, `<a title="$1" target="_blank" class="anchor" href="$2">$1</a>`)
-    
+
         if (inlineBlock)
             // Treat both inline code and code blocks as inline code
             txt = txt.replace(/`([^`]+?)`|``([^`]+?)``|```((?:\n|.)+?)```/g, (m, x, y, z) => x ? `<code class="inline">${x}</code>` : y ? `<code class="inline">${y}</code>` : z ? `<code class="inline">${z}</code>` : m);
@@ -488,7 +489,7 @@ addEventListener('DOMContentLoaded', () => {
                 if (fields[i].inline && fields[i + 1]?.inline &&
                     // it's the first field in the embed or -
                     ((i === 0 && fields[i + 2] && !fields[i + 2].inline) || ((
-                        // it's not the first field in the embed but the previous field is not inline or - 
+                        // it's not the first field in the embed but the previous field is not inline or -
                         i > 0 && !fields[i - 1].inline ||
                         // it has 3 or more fields behind it and 3 of those are inline except the 4th one back if it exists -
                         i >= 3 && fields[i - 1].inline && fields[i - 2].inline && fields[i - 3].inline && (fields[i - 4] ? !fields[i - 4].inline : !fields[i - 4])
@@ -988,7 +989,7 @@ addEventListener('DOMContentLoaded', () => {
 
     // Renders embed and message content.
     buildEmbed = ({ jsonData, only, index = 0 } = {}) => {
-        if (jsonData) json = jsonData;
+        if (jsonData) json = { embeds: [jsonData] };
         if (!jsonObject.embeds?.length) document.body.classList.add('emptyEmbed');
 
         try {
@@ -996,7 +997,7 @@ addEventListener('DOMContentLoaded', () => {
             if (!jsonObject.content) document.body.classList.add('emptyContent');
             else {
                 // Update embed content in render
-                embedContent.innerHTML = markup(encodeHTML(jsonObject.content), { replaceEmojis: true });
+                // embedContent.innerHTML = markup(encodeHTML(jsonObject.content), { replaceEmojis: true });
                 document.body.classList.remove('emptyContent');
             }
 
@@ -1007,7 +1008,7 @@ addEventListener('DOMContentLoaded', () => {
 
             switch (only) {
                 // If only updating the message content and nothing else, return here.
-                case 'content': return externalParsing({ element: embedContent });
+                // case 'content': return externalParsing({ element: embedContent });
                 case 'embedTitle':
                     const embedTitle = embed?.querySelector('.embedTitle');
                     if (!embedTitle) return buildEmbed();
@@ -1148,7 +1149,7 @@ addEventListener('DOMContentLoaded', () => {
 
     editor.on('change', editor => {
         // If the editor value is not set by the user, return.
-        if (JSON.stringify(json, null, 4) === editor.getValue()) return;
+        if (JSON.stringify(json.embeds[0], null, 4) === editor.getValue()) return;
 
         try {
             // Autofill when " is typed on new line
@@ -1160,7 +1161,7 @@ addEventListener('DOMContentLoaded', () => {
                 editor.setCursor(line, text.length)
             }
 
-            json = JSON.parse(editor.getValue());
+            json = { embeds: [JSON.parse(editor.getValue())] };
             const dataKeys = Object.keys(json);
 
             if (dataKeys.length && !allJsonKeys.some(key => dataKeys.includes(key))) {
@@ -1175,7 +1176,7 @@ addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             if (editor.getValue()) return;
             document.body.classList.add('emptyEmbed');
-            embedContent.innerHTML = '';
+            // embedContent.innerHTML = '';
         }
     });
 
@@ -1264,7 +1265,7 @@ addEventListener('DOMContentLoaded', () => {
             // Clicked GUI tab while a blank embed is added from GUI.
             return error(gui.querySelectorAll('.item.guiEmbedName')[emptyEmbedIndex].innerText.split(':')[0] + ' should not be empty.', '3s');
 
-        const jsonStr = JSON.stringify(json, null, 4);
+        const jsonStr = JSON.stringify(json.embeds[0], null, 4);
         lastGuiJson = jsonStr;
 
         document.body.classList.remove('gui');
@@ -1286,7 +1287,7 @@ addEventListener('DOMContentLoaded', () => {
         buildEmbed();
         buildGui();
 
-        const jsonStr = JSON.stringify(json, null, 4);
+        const jsonStr = JSON.stringify(json.embeds[0], null, 4);
         editor.setValue(jsonStr === '{}' ? '{\n\t\n}' : jsonStr);
 
         for (const e of document.querySelectorAll('.gui .item'))

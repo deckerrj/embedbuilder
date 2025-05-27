@@ -23,7 +23,7 @@ options = {
     hidePreview: false,
     hideMenu: false,
     single: false,
-    noMultiEmbedsOption: false,
+    noMultiEmbedsOption: true,
     sourceOption: false, // Display link to source code in menu.
 }
 
@@ -36,6 +36,15 @@ options = {
 //         description: "A description",
 //     }
 // }
+
+json = {
+    embeds: [
+        {
+            title: "A title",
+            description: "A description"
+        }
+    ]
+}
 
 
 // Write any code under the 'DOMContentLoaded' event to run after the page has loaded.
